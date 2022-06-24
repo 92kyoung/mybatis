@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace에 들어가는 문자는 자기 맘대로 설정! -->
+<mapper namespace="dao.BoardDAO">
+
+
+	<resultMap type="boardVO" id="boardMap">
+		<result column="no" property="no" />
+		<result column="title" property="title" /> <!--타이틀이라는 컬럼이 나오면 set/get title과 연동시켜 -->
+		<result column="writer" property="writer" />
+		<result column="content" property="content" />
+		<result column="view_cnt" property="viewCnt" />
+		<result column="reg_date" property="regDate" />
+
+
+	</resultMap>
+
+	<!-- 공통의 쿼리는 sql 태그로 묶어서 include 태그를 사용해서 쓴다. -->
+	<sql id="selectAll">
+		select no, title, writer, content, view_cnt as viewCnt,
+		to_char(reg_date, 'yyyy-mm-dd') regDate from t_board
+	</sql>
+
+	<!--getter와 setter를 알아서 매핑해준다. ${title} => parameterType의 title 정보 ${}은 
+		statement 객체이므로 ${}의 내용이 문자열인 경우에는 작은따음표로 감싸서 사용해야한다. -->
+	<insert id="insertBoard" parameterType="boardVO">
+		insert into
+		t_board(no,title,writer,content)
+		values (seq_t_board_no.nextval,'${title}','${writer}','${content}')
+	</insert>
+
+
+	<!-- resultType: select한 record 정보를 가져오기 위한 타입 -->
+	<select id="selectAllBoard" resultType="boardVO">
+		<include refid="selectAll" />
+		order by no desc
+	</select>
+
+
+	<select id="selectByNo" resultType="boardVO" parameterType="int">
+		select no, title, writer, content, view_cnt as viewCnt
+		, to_char(reg_date, 'yyyy-mm-dd') regDate
+		from t_board
+		where no = #{no}
+	</select>
+
+	<select id="selectByNo2" resultType="boardVO"
+		parameterType="boardVO">
+		select no, title, writer, content, view_cnt as viewCnt
+		, to_char(reg_date, 'yyyy-mm-dd') regDate
+		from t_board
+		where no = #{no}
+	</select>
+
+	<select id="selectByNo3" parameterType="boardVO"
+		resultMap="boardMap">
+		select no, title, writer, content, view_cnt as viewCnt
+		, to_char(reg_date, 'yyyy-mm-dd') reg_date
+		from t_board
+		where no = #{no}
+	</select>
+
+	<select id="selectWhere" parameterType="string"
+		resultType="boardVO">
+		<include refid="selectAll"></include>
+		where title like '%' || #{title} || '%'
+		<!-- where title like '%${title}%' -->  <!-- 달러{}는 statement 객체라 문자 그 자체로 들어가서 작음따음표로 감싸서 사용할 수 있다 -->
+	</select>
+
+
+	<select id="selectWhere2" parameterType="string"
+		resultType="boardVO">
+		<include refid="selectAll"></include>
+		<where> <!-- 동적으로 sql의 where절이 쓸일 수 도 있고 안쓰일수도 있게 해준다. -->
+			<if test="title != null">
+				title = #{title}
+			</if>
+			<if test="writer != null">
+				and writer = #{writer}  <!-- title 이 null 이면 동적으로 and가 알아서 없어진다. : where 
+					writer=#{writer} -->
+			</if>
+		</where>
+	</select>
+
+
+
+	<select id="selectNos" parameterType="boardVO" resultType="boardVO">
+		<include refid="selectAll"/>
+		where no in 
+			<foreach collection="nos" item="bno" separator="," open="(" close=")">
+				#{bno}
+			</foreach>
+	</select>
+	
+	
+	<select id="selectNos2" parameterType="int[]" resultType="boardVO">
+		<include refid="selectAll"/>
+		where no in 
+			<foreach collection="array" item="bno" separator="," open="(" close=")">
+				#{bno}
+			</foreach>
+	</select>
+
+
+	<select id="selectMap" resultType="boardVO" parameterType="map">
+		<include refid="selectAll" />
+		where title = #{title} and writer = #{writer}
+	</select>
+	
+	<select id="selectMap2" resultType="map" parameterType="int">
+		<include refid="selectAll" />
+		where no = #{no}
+	</select>
+
+</mapper>
